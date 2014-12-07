@@ -86,48 +86,82 @@ class Code(namedtuple('Code', CODE_ARGS)):
         bytecode = self.bytecode = dis.Bytecode(self.code)
         return bytecode
 
-    def implement(self, *symbols, **kwds):
-        signature = [locals, globals, None]
-        constants = list(self.constants) + [emit] + signature[:-1]
+    def _instructions(self, key, names, constants):
+        #TODO consts
+        EMIT = '.retrospect.emit'
+        LOCALS = '.retrospect.locals'
+        GLOBALS = '.retrospect.globals'
+
+        if EMIT not in names:
+            names.append(EMIT)
+        if LOCALS not in names:
+            names.append(LOCALS)
+        if GLOBALS not in names:
+            names.append(GLOBALS)
+        if key not in constants:
+            constants.append(key)
 
         ins = dis.Instruction(*[None]*8)
-        ins_pop_top = ins._replace(opcode=1, opname='POP_TOP')
-        ins_load_const = ins._replace(opcode=100, opname='LOAD_CONST')
-        ins_call_function = ins._replace(opcode=131, opname='CALL_FUNCTION')
+        pop_top = ins._replace(opcode=1, opname='POP_TOP')
+        load_const = ins._replace(opcode=100, opname='LOAD_CONST')
+        load_global = ins._replace(opcode=116, opname='LOAD_GLOBAL')
+        call_function = ins._replace(opcode=131, opname='CALL_FUNCTION')
 
-        ins_new = [
-            ins_load_const._replace(arg=constants.index(emit)),
+        ins_branch = [
+            load_global._replace(arg=names.index(EMIT)),
+            load_global._replace(arg=names.index(LOCALS)),
+            call_function._replace(arg=0),
+            load_global._replace(arg=names.index(GLOBALS)),
+            call_function._replace(arg=0),
+            load_const._replace(arg=constants.index(key)),
+            call_function._replace(arg=3),
+            pop_top,
             ]
-        for arg in signature:
-            ins_new.extend((
-                arg and ins_load_const._replace(arg=constants.index(arg)),
-                arg and ins_call_function._replace(arg=0),
-                ))
-        ins_new.extend((
-            ins_call_function._replace(arg=len(signature)),
-            ins_pop_top,
-            ))
+
+        return ins_branch
+
+    def implement(self, **kwds):
+        key = str(time.time())
+        names = list(self.names)
+        constants = list(self.constants)
+
+        # strategies
+        poi = dict()
+        for point in ('symbols', 'lines', 'bytecode'):
+            interest = kwds.pop(point, None) or list()
+            if interest is not True:
+                try:
+                    interest = [int(interest)]
+                except (TypeError, ValueError) as e:
+                    if interest[0:0] == '':
+                        interest = [interest]
+                    interest = list(interest)
+            poi[point] = interest
 
         def context():
             return (self.fun.__retrospect__, None)
 
         ins_all = list()
         for ins in self.bytecode:
-            if ins.starts_line is not None or ins.opname in (
-                    'RETURN_VALUE',
-                    ):
-                #TODO: opcode.EXTENDED_ARG?
-                # creates many constants... need to ensure correct
-                #def context(self=self, lineno=ins.starts_line):
-                #    return (self, lineno)
-                if context not in constants:
-                    constants.append(context)
-                ins_ctx = ins_load_const._replace(arg=constants.index(context))
-                ins_ctx_call = ins_call_function._replace(arg=0)
-                ins_starts_line = ins_new[:]
-                ins_starts_line[-4:-2] = [ins_ctx, ins_ctx_call]
-                ins_all.extend(ins_starts_line)
+            emit_ins_before = emit_ins_after = False
+
+            if poi['bytecode'] or ins.opname == 'RETURN_VALUE':
+                emit_ins_before = True
+
+            if ins.opname == 'STORE_FAST':
+                if poi['symbols'] is True or ins.argval in poi['symbols']:
+                    emit_ins_before = True
+                    emit_ins_after = True
+
+            if ins.starts_line is not None:
+                if poi['lines'] is True or ins.starts_line in poi['lines']:
+                    emit_ins_before = True
+
+            if emit_ins_before:
+                ins_all.extend(self._instructions(key, names, constants))
             ins_all.append(ins)
+            if emit_ins_after:
+                ins_all.extend(self._instructions(key, names, constants))
 
         #TODO: lists
         lnotab = ''
@@ -152,6 +186,7 @@ class Code(namedtuple('Code', CODE_ARGS)):
             codestring += ins.codestring
 
         clone = self._replace(
+            names=tuple(names),
             constants=tuple(constants),
             codestring=codestring,
             lnotab=lnotab,
@@ -172,20 +207,13 @@ class Retrospector(object):
 
         self.fun = fun
 
-    def trace_none(self):
+    def trace(self, **kwds):
         fun = self.fun
         cache = self.fun._code_cache
-        tracer = cache[None]
-
-        fun.__code__ = tracer.code
-        return self
-
-    def trace_lines(self):
-        fun = self.fun
-        cache = self.fun._code_cache
-        tracer = cache.get('lines')
+        key = frozenset(kwds.items()) or None
+        tracer = cache.get(key)
         if tracer is None:
-            tracer = cache['lines'] = cache[None].implement(lines=True)
+            tracer = cache[key] = cache[None].implement(**kwds)
 
         fun.__code__ = tracer.code
         return self
@@ -204,3 +232,15 @@ def retrospect(fun):
 def emit(l, g, c=None):
     from pprint import pprint
     pprint(l)
+
+
+try:
+    import builtins
+except ImportError:
+    import __builtin__ as builtins
+if not hasattr(builtins, '.retrospect.emit'):
+    setattr(builtins, '.retrospect.emit', emit)
+if not hasattr(builtins, '.retrospect.locals'):
+    setattr(builtins, '.retrospect.locals', locals)
+if not hasattr(builtins, '.retrospect.globals'):
+    setattr(builtins, '.retrospect.globals', globals)
