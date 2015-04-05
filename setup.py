@@ -22,7 +22,9 @@ setup(
     packages=[
         'retrospect',
         ],
-    install_requires=[],
+    install_requires=[
+        'byteplay',
+        ],
     entry_points={},
     zip_safe=True,
     )
