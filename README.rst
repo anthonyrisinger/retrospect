@@ -9,24 +9,25 @@ Classic logging expects perfect foresight, but only hindsight is 20/20!
 Usage
 -----
 
-Install via pip, then enter a shell and define a function::
+Install via pip, then enter in a shell:
 
-    >>> def hello(a, b=2):
-    >>>     """docstring"""
-    >>>     a = 1
-    >>>     c = b * 2
-    >>>     a = b = c = a * 2 + b * c
-    >>>     print('output: a={} b={} c={}'.format(a, b, c))
-    >>>     return a, b, c
+.. code-block:: python
 
-Attach a ``retrospect.FunctionRetrospector`` to it::
+    def hello(a, b=2):
+        """docstring"""
+        a = 1
+        c = b * 2
+        a = b = c = a * 2 + b * c
+        print('output: a={} b={} c={}'.format(a, b, c))
+        return a, b, c
 
-    >>> import retrospect
-    >>> retro = retrospect.FunctionRetrospector(hello)
+    import retrospect
+    retro = retrospect.FunctionRetrospector(hello)
 
-Now you can start inspecting lines in real-time::
+Now you can start inspecting lines in real-time:
 
-    >>> # emit at all line changes and function start/finish
+.. code-block:: python
+
     >>> retro.implement(lines=True)
     >>> hello(10)
     ((3, SetLineno, 3), {'a': 10, 'b': 2})
@@ -37,17 +38,19 @@ Now you can start inspecting lines in real-time::
     ((7, SetLineno, 7), {'a': 10, 'b': 10, 'c': 10})
     ((7, RETURN_VALUE, None), {'a': 10, 'b': 10, 'c': 10})
 
-Or a specific set of lines::
+Or a specific set of lines:
 
-    >>> # emit only at line 4
+.. code-block:: python
+
     >>> retro.implement(lines=[4], boundaries=False)
     >>> hello(20)
     ((4, SetLineno, 4), {'a': 1, 'b': 2})
     output: a=10 b=10 c=10
 
-Or only on symbol changes::
+Or only on symbol changes:
 
-    >>> # emit before/after STORE_FAST and at function start
+.. code-block:: python
+
     >>> retro.implement(symbols=True, boundaries='start')
     >>> hello(30)
     ((3, SetLineno, 3), {'a': 30, 'b': 2})
@@ -63,9 +66,10 @@ Or only on symbol changes::
     ((5, STORE_FAST, 'c'), {'a': 10, 'b': 10, 'c': 10})
     output: a=10 b=10 c=10
 
-Or specific opcodes::
+Or specific opcodes:
 
-    >>> # emit before LOAD_CONST and RETURN_VALUE
+.. code-block:: python
+
     >>> retro.implement(opcodes=['LOAD_CONST'], boundaries='finish')
     >>> hello(40)
     ((3, LOAD_CONST, 1), {'a': 40, 'b': 2})
@@ -75,10 +79,12 @@ Or specific opcodes::
     output: a=10 b=10 c=10
     ((7, RETURN_VALUE, None), {'a': 10, 'b': 10, 'c': 10})
 
-Or return to exact original::
+Or return to **exact** original:
+
+.. code-block:: python
 
     >>> retro.implement()
     >>> hello(50)
     output: a=10 b=10 c=10
 
-Any of the above can be mixed as necessary, eg. lines=4 symbols=c
+Any of the above can be mixed as necessary, eg. ``lines=True, symbols="c"``
