@@ -30,12 +30,12 @@ Now you can start inspecting lines in real-time::
     >>> retro.implement(lines=True)
     >>> hello(10)
     ((3, SetLineno, 3), {'a': 10, 'b': 2})
-	((4, SetLineno, 4), {'a': 1, 'b': 2})
-	((5, SetLineno, 5), {'a': 1, 'b': 2, 'c': 4})
-	((6, SetLineno, 6), {'a': 10, 'b': 10, 'c': 10})
-	output: a=10 b=10 c=10
-	((7, SetLineno, 7), {'a': 10, 'b': 10, 'c': 10})
-	((7, RETURN_VALUE, None), {'a': 10, 'b': 10, 'c': 10})
+    ((4, SetLineno, 4), {'a': 1, 'b': 2})
+    ((5, SetLineno, 5), {'a': 1, 'b': 2, 'c': 4})
+    ((6, SetLineno, 6), {'a': 10, 'b': 10, 'c': 10})
+    output: a=10 b=10 c=10
+    ((7, SetLineno, 7), {'a': 10, 'b': 10, 'c': 10})
+    ((7, RETURN_VALUE, None), {'a': 10, 'b': 10, 'c': 10})
 
 Or a specific set of lines::
 
