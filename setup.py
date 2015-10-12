@@ -6,7 +6,7 @@ from setuptools import setup
 
 setup(
     name='retrospect',
-    version='0.1.2',
+    version='0.1.3',
     description='Log with 20/20 vision',
     long_description=open('README.rst').read(),
     url='https://github.com/xtfxme/retrospect',
