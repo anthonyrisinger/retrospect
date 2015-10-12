@@ -48,7 +48,7 @@ class FunctionRetrospector(object):
 
         # TODO: move elsewhere
         poi = dict()
-        for point in ('symbols', 'lines', 'bytecode', 'boundaries'):
+        for point in ('symbols', 'lines', 'opcodes', 'boundaries'):
             # start with what the user sent else default empty
             interest = kwds.pop(point, None) or tuple()
 
@@ -87,7 +87,7 @@ class FunctionRetrospector(object):
                     # inspect before and after the call
                     emit_before = True
                     emit_after = True
-            elif poi['bytecode'] is True or str(opcode) in poi['bytecode']:
+            elif poi['opcodes'] is True or str(opcode) in poi['opcodes']:
                 # TODO: need to provide top-of-stack
                 emit_before = True
 
