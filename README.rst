@@ -66,7 +66,7 @@ Or only on symbol changes::
 Or specific opcodes::
 
     >>> # emit before LOAD_CONST and RETURN_VALUE
-    >>> retro.implement(bytecode=['LOAD_CONST'], boundaries='finish')
+    >>> retro.implement(opcodes=['LOAD_CONST'], boundaries='finish')
     >>> hello(40)
     ((3, LOAD_CONST, 1), {'a': 40, 'b': 2})
     ((4, LOAD_CONST, 2), {'a': 1, 'b': 2})
